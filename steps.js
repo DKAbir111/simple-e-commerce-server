@@ -1,7 +1,7 @@
 /*
 * connect to mongodb
-* creare database-> db.client("databsename")
-* create collections=> databse.createCollection('collectionsNames')
+* creare database-> client.db("databsename")
+* create collections=> database.collection('collectionsNames')
 
 
 */

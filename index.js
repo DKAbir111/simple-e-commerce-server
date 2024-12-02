@@ -1,52 +1,56 @@
 const express = require('express');
 const cors = require('cors');
+const createRoutes = require('./routes/products.route.js');
+const createOrder = require('./routes/order.route.js');
 const app = express();
-require('dotenv').config()
+require('dotenv').config();
 const { MongoClient, ServerApiVersion } = require('mongodb');
 
-//middleware
+// Middleware
 app.use(cors());
-app.use(express.json())
+app.use(express.json());
 
-const port = process.env.PORT
+const port = process.env.PORT || 5001; // Default to 5001 if not set
+
 app.get('/', (req, res) => {
-    res.send("Server is running")
-})
-
+    res.send("Server is running");
+});
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.xratx.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
     serverApi: {
         version: ServerApiVersion.v1,
         strict: true,
         deprecationErrors: true,
-    }
+    },
 });
 
 async function run() {
+    const database = client.db("ecommerceDB");
+    const productCollections = database.collection('productCollections');
+    const orderCollections = database.collection('orderCollections');
     try {
-        // Connect the client to the server	(optional starting in v4.7)
         await client.connect();
-        //Allroutes
 
-
-
-        // Send a ping to confirm a successful connection
+        // Use the routes with productCollections passed in
+        app.use(createRoutes(productCollections))
+        app.use(createOrder(orderCollections))
+        app.use((req, res) => {
+            res.status(404).send("Page not found");
+        });
         await client.db("admin").command({ ping: 1 });
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
-    } finally {
-        // Ensures that the client will close when you finish/error
-        await client.close();
+        console.log("Connected to MongoDB successfully!");
+    } catch (error) {
+        console.error('Error connecting to MongoDB:', error);
     }
 }
-run().catch(console.dir);
 
-//for wrong routes
-app.use((req, res) => {
-    res.status(404).send("Page not found")
-})
+run().catch(console.error);
+
+// **404 handler should be placed after route definitions**
+
+
 app.listen(port, () => {
-    console.log(`Server is running at http://localhost:${port}`)
-})
+    console.log(`Server is running at http://localhost:${port}`);
+});
